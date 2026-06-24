@@ -17,7 +17,7 @@ const GroqPlugin: AIPlugin = {
     }
 
     const { text } = await generateText({
-      model: groqClient('llama3-70b-8192'),
+      model: groqClient('llama-3.3-70b-versatile'),
       prompt: prompt,
       system: systemInstruction,
     });
