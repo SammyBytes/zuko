@@ -24,8 +24,8 @@ Since Zuko is currently in an alpha state and not available via standard global 
 Clone the repository and install the internal dependencies from the root of the monorrepo. This will automatically map the local workspaces.
 
 ```bash
-git clone https://github.com/SammyBytes/zuko-monorepo.git
-cd zuko-monorepo
+git clone https://github.com/SammyBytes/zuko.git
+cd zuko
 bun install
 
 ```
