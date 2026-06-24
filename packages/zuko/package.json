@@ -1,0 +1,12 @@
+{
+  "name": "zuko",
+  "version": "0.0.1",
+  "main": "src/index.ts",
+  "bin": {
+    "zuko": "./src/index.ts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.0",
+    "picocolors": "^1.1.0"
+  }
+}
