@@ -1,5 +1,5 @@
 export interface AIPlugin {
-  id: string;
+  id: AIPluginId;
   name: string;
   execute: (prompt: string, systemInstruction?: string) => Promise<string>;
 }
@@ -17,7 +17,7 @@ export interface WorkflowNode {
   id: string; // Ej: "A", "B"
   pluginId: AIPluginId; // Ej: "groq", "gemini"
   systemInstruction?: string;
-  fallbackPluginId: AIPluginId | null; //
+  fallbackPluginId: AIPluginId | null; // Ej: "groq", "gemini" o null
 }
 
 export interface Workflow {
