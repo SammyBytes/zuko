@@ -99,8 +99,7 @@ export async function handleRun(
   }
 
   p.log.step(`Running ${pc.green(workflow.name)}`);
-  
-  // ─── LÓGICA DE MEMORIA ACUMULATIVA ───
+
   let currentInput = prompt;
   let accumulatedOutput = "";
 
@@ -117,14 +116,15 @@ export async function handleRun(
     const s = p.spinner();
     s.start(`${pc.cyan(node.id)} via ${pc.yellow(plugin.name)}`);
     try {
-      const nodeOutput = await plugin.execute(currentInput, node.systemInstruction);
-      
-      // Guardamos la respuesta estructurada en el reporte final para la UI
+      const nodeOutput = await plugin.execute(
+        currentInput,
+        node.systemInstruction,
+        node.modelId, // Directly forwards the saved model configuration
+      );
+
       accumulatedOutput += `\n${pc.cyan(pc.bold(`## 🚀 [Node: ${node.id}]`))}\n\n${nodeOutput}\n\n${pc.gray("─".repeat(40))}\n`;
-      
-      // El resultado de este modelo alimenta al siguiente de la cadena
-      currentInput = nodeOutput; 
-      
+      currentInput = nodeOutput;
+
       s.stop(`${node.id} ✓`);
     } catch (err: any) {
       s.stop(`${node.id} ✗`);
@@ -133,7 +133,6 @@ export async function handleRun(
     }
   }
 
-  // Desplegamos el árbol completo acumulado
   await showOutput(accumulatedOutput.trim());
 }
 
@@ -141,11 +140,10 @@ export async function handleRun(
 
 async function pause() {
   p.log.message("");
-  // Usamos confirm en lugar de text vacío para evitar romper el flujo del buffer TTY de Clack
   await p.confirm({
     message: "Finished reviewing execution. Back to main menu?",
     active: "Yes",
-    placeholder: "Press Enter"
+    placeholder: "Press Enter",
   });
   console.clear();
 }
@@ -154,7 +152,7 @@ async function pause() {
 
 export async function mainInteractive(plugins: PluginMap) {
   console.clear();
-  
+
   while (true) {
     p.intro(
       `${pc.bgRed(pc.black(" ZUKO "))} ${pc.bold("Multi-Model Prompt Pipeline")}`,
@@ -186,6 +184,6 @@ export async function mainInteractive(plugins: PluginMap) {
 
     await pause();
   }
-  
+
   p.outro(pc.yellow("Bye! 🚀"));
 }
