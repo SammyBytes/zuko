@@ -66,6 +66,6 @@ bun packages/zuko/src/index.ts
 * [x] Core Monorepo & Workspace Infrastructure with Bun.
 * [x] Dynamic Lazy-Loading Plugin Architecture.
 * [x] Sequential Pipeline Graph Execution.
-* [ ] Interactive TUI Workflow Creator (via `@clack/prompts`).
-* [ ] Portable File Persistence (`workflows.json`).
+* [x] Interactive TUI Workflow Creator (via `@clack/prompts`).
+* [x] Portable File Persistence (`workflows.json`).
 * [ ] Automated Fallback Node Execution.
