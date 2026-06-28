@@ -22,14 +22,15 @@
 zuko/src/
   commands/        ← Command definitions + Commander wiring (pure logic, no TUI)
     index.ts       ← Manifest — imports all commands, provides registerCommands()
-    run/index.ts + tui.ts
-    create/index.ts + tui.ts
+    run/index.ts + tui.ts  ← tui uses DAG executor with tree renderer (parallel waves)
+    create/index.ts + tui.ts + templates.ts  ← wizard: templates / custom DAG builder
     list/index.ts  ← no tui.ts (list has no interactive mode)
   tui/             ← Dynamically discovers TUI handlers from commands/*/tui.ts
     index.ts       ← Main interactive menu (no hardcoded switch)
     shared.ts      ← Clipboard + output helpers
-  engine/          ← Pipeline execution (linear now, DAG-ready)
-    pipeline.ts    ← Pure function: executePipeline()
+  engine/          ← Pipeline execution (DAG + linear fallback)
+    dag.ts         ← executeDag(): parallel wave execution, topological sort, event callbacks
+    pipeline.ts    ← executePipeline(): legacy linear executor (kept for reference)
   registry.ts      ← Dynamic plugin discovery (scans node_modules/@sammybits/zuko-plugin-*)
   storage.ts       ← Workflow I/O (reads/writes .zuko/workflows/*.json)
   index.ts         ← Entrypoint: loadPlugins → registerCommands → parse or TUI
@@ -48,9 +49,15 @@ Each command has a pure logic function (no TUI deps) exposed separately so the T
 
 TUI handlers live in the command directory (colocated, no extra dependency injection). The main menu dynamically imports `commands/*/tui.ts` — if it doesn't exist, the command simply isn't shown.
 
-### `engine/pipeline.ts`
+### `engine/dag.ts` (primary) / `engine/pipeline.ts` (legacy)
 
-`executePipeline()` is the sole place where workflows are executed (node iteration, plugin calls, error handling). When the linear pipeline evolves into a DAG, only this file changes — commands and TUI stay untouched.
+`executeDag()` is the primary executor. It handles both DAG and linear workflows:
+
+- **DAG mode**: nodes with `dependsOn` defined form a dependency graph. Independent nodes run in parallel waves via `Promise.allSettled`.
+- **Legacy mode**: if no node has `dependsOn`, the engine infers a linear chain (backward compat).
+- **Callbacks**: `DagCallbacks` (`onWaveStart`, `onNodeStart`, `onNodeComplete`, `onNodeError`) let the TUI render a live tree.
+
+`executePipeline()` in `pipeline.ts` is kept as a reference linear executor but is no longer used by commands.
 
 ### Dynamic plugin discovery
 

@@ -2,7 +2,46 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import type { AIPlugin } from "@sammybits/zuko-core";
 import { listWorkflows } from "../../storage.ts";
+import { executeDag, type DagCallbacks } from "../../engine/dag.ts";
 import { showOutput } from "../../tui/shared.ts";
+
+class TreeRenderer {
+  private lines: string[] = [];
+  private height = 0;
+
+  private render() {
+    if (this.height > 0) {
+      process.stdout.write(`\x1b[${this.height}A`);
+    }
+    for (const line of this.lines) {
+      process.stdout.write(`\r\x1b[K${line}\n`);
+    }
+    this.height = this.lines.length;
+  }
+
+  addLine(text: string): number {
+    this.lines.push(text);
+    this.render();
+    return this.lines.length - 1;
+  }
+
+  updateLine(index: number, text: string) {
+    this.lines[index] = text;
+    this.render();
+  }
+
+  clear() {
+    if (this.height > 0) {
+      process.stdout.write(`\x1b[${this.height}A`);
+      for (let i = 0; i < this.height; i++) {
+        process.stdout.write(`\r\x1b[K\n`);
+      }
+      process.stdout.write(`\x1b[${this.height}A`);
+    }
+    this.lines = [];
+    this.height = 0;
+  }
+}
 
 export default async function runTui(plugins: Map<string, AIPlugin>) {
   const workflows = await listWorkflows();
@@ -31,43 +70,46 @@ export default async function runTui(plugins: Map<string, AIPlugin>) {
   const workflow = workflows.find((w) => w.id === workflowId)!;
   p.log.step(`Running ${pc.green(workflow.name)}`);
 
-  let currentInput = prompt;
-  const parts: string[] = [];
+  const renderer = new TreeRenderer();
+  const nodeLineMap = new Map<string, number>();
 
-  for (const node of workflow.nodes) {
-    const plugin =
-      plugins.get(node.pluginId) ??
-      (node.fallbackPluginId ? plugins.get(node.fallbackPluginId) : undefined);
+  const callbacks: DagCallbacks = {
+    onWaveStart(wave, nodeIds) {
+      const suffix = nodeIds.length > 1 ? ` (${nodeIds.length} in parallel)` : "";
+      renderer.addLine(pc.cyan(`⚡ Wave ${wave}${suffix}`));
+    },
 
-    if (!plugin) {
-      p.log.error(`Aborted: no plugin for node "${node.id}".`);
-      return;
-    }
-
-    const s = p.spinner();
-    s.start(`${pc.cyan(node.id)} via ${pc.yellow(plugin.name)}`);
-
-    try {
-      const output = await plugin.execute(
-        currentInput,
-        node.systemInstruction,
-        node.modelId,
+    onNodeStart(nodeId) {
+      const node = workflow.nodes.find((n) => n.id === nodeId);
+      const pluginName = node?.pluginId ?? "?";
+      const lineIdx = renderer.addLine(
+        `  ⏳ ${pc.bold(nodeId)} via ${pc.yellow(pluginName)}`,
       );
+      nodeLineMap.set(nodeId, lineIdx);
+    },
 
-      parts.push(
-        `\n${pc.cyan(pc.bold(`## 🚀 [Node: ${node.id}]`))}\n\n${output}\n\n${pc.gray("─".repeat(40))}\n`,
-      );
-      currentInput = output;
-      s.stop(`${node.id} ✓`);
-    } catch (err: any) {
-      s.stop(`${node.id} ✗`);
-      p.log.error(
-        `${pc.red("Error:")} ${err.message}\n` +
-          `  ${pc.dim("Try a different model or check your API key.")}`,
-      );
-      return;
-    }
+    onNodeComplete(nodeId, _text, duration) {
+      const lineIdx = nodeLineMap.get(nodeId);
+      if (lineIdx === undefined) return;
+      const dur = `[${(duration / 1000).toFixed(1)}s]`;
+      renderer.updateLine(lineIdx, `  ${pc.green("✓")} ${pc.bold(nodeId)} ${pc.dim(dur)}`);
+    },
+
+    onNodeError(nodeId, error) {
+      const lineIdx = nodeLineMap.get(nodeId);
+      if (lineIdx === undefined) return;
+      renderer.updateLine(lineIdx, `  ${pc.red("✗")} ${pc.bold(nodeId)} ${pc.dim(error.message)}`);
+    },
+  };
+
+  const result = await executeDag(workflow, prompt, plugins, callbacks);
+
+  renderer.addLine("");
+
+  if (!result.success) {
+    p.log.error(result.error ?? "Unknown error");
+    return;
   }
 
-  await showOutput(parts.join("").trim());
+  await showOutput(result.output ?? "");
 }
