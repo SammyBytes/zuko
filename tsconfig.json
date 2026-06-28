@@ -1,20 +1,15 @@
 {
-  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "jsx": "react",
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
-    "baseUrl": ".",
-    "paths": {
-      "@zuko/core": ["packages/zuko/src/index.ts"],
-      "@zuko/plugin-groq": ["packages/plugin-groq/src/index.ts"],
-      "@zuko/plugin-gemini": ["packages/plugin-gemini/src/index.ts"],
-      "@zuko/plugin-claude": ["packages/plugin-claude/src/index.ts"]
-    },
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["packages/**/*"]
 }
