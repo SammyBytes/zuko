@@ -1,17 +1,25 @@
 {
   "name": "@sammybits/zuko-plugin-groq",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.0",
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "src/"
+  ],
   "publishConfig": {
     "access": "public"
   },
+  "scripts": {
+    "prepublishOnly": "bun ../../scripts/check-version.ts",
+    "version:check": "bun ../../scripts/check-version.ts"
+  },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.0",
-    "ai": "^4.1.0"
+    "ai": "^4.1.0",
+    "@sammybits/zuko-core": "workspace:^"
   }
 }

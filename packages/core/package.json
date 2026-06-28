@@ -1,10 +1,11 @@
 {
-  "name": "@sammybits/zuko-cli",
-  "version": "1.0.2-alpha.1",
+  "name": "@sammybits/zuko-core",
+  "version": "1.0.0-alpha.0",
   "type": "module",
   "main": "./src/index.ts",
-  "bin": {
-    "zuko": "./src/index.ts"
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
   },
   "files": [
     "src/"
@@ -15,11 +16,5 @@
   "scripts": {
     "prepublishOnly": "bun ../../scripts/check-version.ts",
     "version:check": "bun ../../scripts/check-version.ts"
-  },
-  "dependencies": {
-    "@clack/prompts": "^0.9.0",
-    "commander": "^12.1.0",
-    "picocolors": "^1.1.0",
-    "@sammybits/zuko-core": "workspace:^"
   }
 }
