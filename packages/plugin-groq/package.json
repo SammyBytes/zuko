@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.0",
-    "ai": "^4.1.0"
+    "ai": "^4.1.0",
+    "@sammybits/zuko-core": "1.0.0"
   }
 }
