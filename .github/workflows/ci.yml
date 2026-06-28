@@ -15,9 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+          
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
 
@@ -27,11 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+          
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck
+      
+      - name: Configure npm production token
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+        
       - run: bun run publish:all
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
