@@ -88,6 +88,13 @@ No pino or any logging framework. CLI mode uses `console.log`/`console.error`. T
 
 Each package has `prepublishOnly` that runs `version:check` — you cannot publish a version that already exists on npm.
 
+## CI/CD
+
+Workflow at `.github/workflows/ci.yml`:
+- **PR to `dev`**: `bun install` + `typecheck`
+- **Push to `main`**: same checks + `publish:all` (core → plugin-groq → zuko)
+- Requires `NPM_TOKEN` secret set in GitHub repository.
+
 ## Env
 
 - `GROQ_API_KEY` — required for Groq plugin
