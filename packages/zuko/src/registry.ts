@@ -1,35 +1,39 @@
-import type { AIPlugin } from "./types.ts";
-import * as p from "@clack/prompts";
-import pc from "picocolors";
-
-// Explicitly import the production package 
-import GroqPlugin from "@sammybits/zuko-plugin-groq";
+import { readdir } from "node:fs/promises";
+import path from "node:path";
+import type { AIPlugin } from "@sammybits/zuko-core";
 
 export async function loadPlugins(): Promise<Map<string, AIPlugin>> {
   const plugins = new Map<string, AIPlugin>();
-  const detailedErrors: string[] = [];
 
+  const scopeDir = path.join(
+    import.meta.dirname,
+    "..",
+    "..",
+    "..",
+    "node_modules",
+    "@sammybits",
+  );
+
+  let entries: string[];
   try {
-    // Resolve standard ESM default structures safely
-    const plugin = (GroqPlugin as any)?.default || GroqPlugin;
-
-    if (plugin && typeof plugin === "object" && "name" in plugin) {
-      plugins.set("groq", plugin as AIPlugin);
-    } else {
-      throw new Error(`Invalid plugin structure (type: ${typeof plugin})`);
-    }
-  } catch (error: any) {
-    detailedErrors.push(`groq: ${error.message}`);
+    entries = await readdir(scopeDir);
+  } catch {
+    return plugins;
   }
 
-  // Diagnostic warning fallback
-  if (plugins.size === 0 && detailedErrors.length > 0) {
-    p.note(
-      `${pc.yellow("Notice:")} Could not establish core link with integrated plugins.\n\n` +
-        `${pc.bold("Diagnostic Output:")}\n` +
-        detailedErrors.map((err) => `  ${pc.red("→")} ${err}`).join("\n"),
-      "Ecosystem Alert",
-    );
+  for (const pkgName of entries) {
+    if (!pkgName.startsWith("zuko-plugin-")) continue;
+
+    try {
+      const mod = await import(`@sammybits/${pkgName}`);
+      const plugin = (mod.default ?? mod) as AIPlugin;
+
+      if (plugin && typeof plugin.execute === "function") {
+        plugins.set(plugin.id, plugin);
+      }
+    } catch {
+      // Plugin failed to load — skip silently
+    }
   }
 
   return plugins;

@@ -13,6 +13,6 @@
     "@clack/prompts": "^0.9.0",
     "commander": "^12.1.0",
     "picocolors": "^1.1.0",
-    "@sammybits/zuko-plugin-groq": "^1.0.0"
+    "@sammybits/zuko-core": "1.0.0"
   }
 }
