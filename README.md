@@ -1,71 +1,138 @@
 # Zuko
 
-A minimalist, high-performance, and multi-model prompt orchestration pipeline designed for the terminal. Built on top of Bun and the Vercel AI SDK, Zuko allows developers to daisy-chain multiple Large Language Models (e.g., Gemini, Claude, Grok, Groq) sequentially to refine, audit, and generate optimal technical outputs without leaving their workspace.
+Chain AI models into prompt pipelines — right from your terminal.
 
-## Core Objective
+Zuko lets you build workflows where each step sends its output to the next, using different providers (Groq, Gemini, etc.). Create a linear chain or a parallel DAG, run it, and copy the result — all without leaving the command line.
 
-The primary goal of Zuko is to eliminate the friction of manual prompt engineering and iterative copy-pasting between different AI interfaces. By implementing a sequential node architecture with built-in fallback resilience, Zuko transforms raw, ambiguous ideas into production-ready code or precise technical specifications through a single terminal command.
+> **Note:** This is a hobby project. It works, but expect rough edges. Contributions and feedback are welcome.
 
-## Ecosystem Architecture
+---
 
-Zuko utilizes a highly decoupled, modular monorepo structure. The core package handles purely the terminal user interface (TUI) and orchestration logic, while AI providers are loaded dynamically at runtime as lightweight plug-and-play packages.
-
-## Local Development & Testing Guide
-
-Since Zuko is currently in an alpha state and not available via standard global installation managers, developers can run and test the pipeline locally using Bun Workspaces.
-
-### Prerequisites
-
-* Bun runtime installed on your machine.
-* Valid API keys for the providers you intend to test (e.g., Groq, Google Gemini).
-
-### 1. Clone and Install Dependencies
-
-Clone the repository and install the internal dependencies from the root of the monorrepo. This will automatically map the local workspaces.
+## Install
 
 ```bash
-git clone https://github.com/SammyBytes/zuko.git
-cd zuko
-bun install
-
+npm install -g @sammybits/zuko-cli
 ```
 
-### 2. Link Subpackages for Development
-
-To enable the core package to resolve the dynamic plugin imports locally in your development environment, establish symbolic links between the packages.
+Or with Bun:
 
 ```bash
-# Link the plugin package globally to your local Bun cache
-bun link --cwd packages/plugin-groq
-
-# Register the link inside the core package
-bun link @zuko/plugin-groq --cwd packages/zuko
-
+bun install -g @sammybits/zuko-cli
 ```
 
-### 3. Set Up Environment Variables
+### Requirements
 
-Export the required API keys to your current terminal session. For testing with the default free-tier plugin (Groq):
+- [Bun](https://bun.sh) or [Node.js](https://nodejs.org) 18+
+- An API key for at least one AI provider
+
+---
+
+## Quick Start
 
 ```bash
-export GROQ_API_KEY="your_groq_api_key_here"
+# 1. Set your API key
+export GROQ_API_KEY="gsk_your_key_here"
 
+# 2. Launch the interactive menu
+zuko
 ```
 
-### 4. Run the Pipeline
+From the menu:
+1. **Create** — pick a template or build a custom workflow
+2. **Run** — select a workflow and execute it
+3. **Edit** — modify an existing workflow's nodes or dependencies
 
-Execute the core entry point directly using Bun:
+---
+
+## CLI Reference
+
+| Command | What it does |
+|---|---|
+| `zuko` | Launch the interactive terminal UI |
+| `zuko create` | Create a workflow (interactive wizard) |
+| `zuko run <workflow-id>` | Run a workflow by ID |
+| `zuko edit [workflow-id]` | Edit an existing workflow |
+| `zuko --help` | Show all options |
+
+### Examples
 
 ```bash
-bun packages/zuko/src/index.ts
+# Open the TUI menu
+zuko
 
+# Run a workflow directly
+zuko run my-pipeline
+
+# Edit a workflow
+zuko edit my-pipeline
 ```
 
-## Project Status & Roadmap
+---
 
-* [x] Core Monorepo & Workspace Infrastructure with Bun.
-* [x] Dynamic Lazy-Loading Plugin Architecture.
-* [x] Sequential Pipeline Graph Execution.
-* [x] Interactive TUI Workflow Creator (via `@clack/prompts`).
-* [x] Portable File Persistence (`workflows.json`).
-* [ ] Automated Fallback Node Execution.
+## Workflows
+
+A workflow is a series of AI nodes connected in a directed acyclic graph (DAG).
+
+### Linear chain
+
+Nodes run one after another. Each node receives the previous node's output as its prompt.
+
+```
+Prompt → Researcher → Writer → Publisher
+```
+
+### Parallel DAG
+
+Independent nodes run at the same time. A node can depend on multiple upstream nodes.
+
+```
+         ┌─ Security Scan ─┐
+Prompt → ┤                 ├─ Report
+         └─ Performance ───┘
+```
+
+### Node properties
+
+Each node has:
+
+- **Plugin** — which AI provider to use
+- **System instruction** — context for the AI (e.g., "You are a code reviewer")
+- **Model ID** — which model to use (provider-dependent)
+- **Dependencies** — which nodes must complete first
+- **Fallback plugin** — optional backup if the primary fails
+
+Workflows are saved as JSON files in `.zuko/workflows/` and can be shared or version-controlled.
+
+---
+
+## Plugins (AI providers)
+
+Plugins are npm packages that add support for different AI providers.
+
+```bash
+npm install @sammybits/zuko-plugin-groq
+```
+
+That's it — Zuko discovers plugins automatically. No config files to edit.
+
+Available plugins:
+
+| Package | Provider | API key |
+|---|---|---|
+| `@sammybits/zuko-plugin-groq` | Groq | `GROQ_API_KEY` |
+
+---
+
+## Environment Variables
+
+| Variable | Required for | Description |
+|---|---|---|
+| `GROQ_API_KEY` | Groq plugin | API key from console.groq.com |
+| `ZUKO_DEBUG=1` | — | Enable debug output |
+
+---
+
+## Need help?
+
+- Open an issue on [GitHub](https://github.com/SammyBytes/zuko/issues)
+- For contributing or building from source: see [CONTRIBUTING.md](./CONTRIBUTING.md)
