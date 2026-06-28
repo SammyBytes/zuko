@@ -3,43 +3,26 @@ import pc from "picocolors";
 import type { AIPlugin } from "@sammybits/zuko-core";
 import { listWorkflows } from "../../storage.ts";
 import { executeDag, type DagCallbacks } from "../../engine/dag.ts";
-import { showOutput } from "../../tui/shared.ts";
+import { showOutput, copyToClipboard } from "../../tui/shared.ts";
 
 class TreeRenderer {
-  private lines: string[] = [];
-  private height = 0;
-
-  private render() {
-    if (this.height > 0) {
-      process.stdout.write(`\x1b[${this.height}A`);
-    }
-    for (const line of this.lines) {
-      process.stdout.write(`\r\x1b[K${line}\n`);
-    }
-    this.height = this.lines.length;
-  }
+  lines: string[] = [];
+  nodeLines = new Map<string, number>();
 
   addLine(text: string): number {
+    const idx = this.lines.length;
     this.lines.push(text);
-    this.render();
-    return this.lines.length - 1;
+    process.stdout.write(`${text}\n`);
+    return idx;
   }
 
   updateLine(index: number, text: string) {
     this.lines[index] = text;
-    this.render();
-  }
-
-  clear() {
-    if (this.height > 0) {
-      process.stdout.write(`\x1b[${this.height}A`);
-      for (let i = 0; i < this.height; i++) {
-        process.stdout.write(`\r\x1b[K\n`);
-      }
-      process.stdout.write(`\x1b[${this.height}A`);
-    }
-    this.lines = [];
-    this.height = 0;
+    const rowsUp = this.lines.length - index;
+    process.stdout.write(`\x1b[s`);
+    process.stdout.write(`\x1b[${rowsUp}A`);
+    process.stdout.write(`\r\x1b[K${text}`);
+    process.stdout.write(`\x1b[u`);
   }
 }
 
@@ -68,10 +51,11 @@ export default async function runTui(plugins: Map<string, AIPlugin>) {
   if (p.isCancel(prompt)) return;
 
   const workflow = workflows.find((w) => w.id === workflowId)!;
+  const startedAt = performance.now();
+
   p.log.step(`Running ${pc.green(workflow.name)}`);
 
   const renderer = new TreeRenderer();
-  const nodeLineMap = new Map<string, number>();
 
   const callbacks: DagCallbacks = {
     onWaveStart(wave, nodeIds) {
@@ -82,29 +66,32 @@ export default async function runTui(plugins: Map<string, AIPlugin>) {
     onNodeStart(nodeId) {
       const node = workflow.nodes.find((n) => n.id === nodeId);
       const pluginName = node?.pluginId ?? "?";
-      const lineIdx = renderer.addLine(
-        `  ⏳ ${pc.bold(nodeId)} via ${pc.yellow(pluginName)}`,
+      const idx = renderer.addLine(
+        `  ⏳ ${nodeId} via ${pc.yellow(pluginName)}`,
       );
-      nodeLineMap.set(nodeId, lineIdx);
+      renderer.nodeLines.set(nodeId, idx);
     },
 
     onNodeComplete(nodeId, _text, duration) {
-      const lineIdx = nodeLineMap.get(nodeId);
-      if (lineIdx === undefined) return;
+      const idx = renderer.nodeLines.get(nodeId);
+      if (idx === undefined) return;
       const dur = `[${(duration / 1000).toFixed(1)}s]`;
-      renderer.updateLine(lineIdx, `  ${pc.green("✓")} ${pc.bold(nodeId)} ${pc.dim(dur)}`);
+      renderer.updateLine(idx, `  ${pc.green("✓")} ${nodeId} ${pc.dim(dur)}`);
     },
 
     onNodeError(nodeId, error) {
-      const lineIdx = nodeLineMap.get(nodeId);
-      if (lineIdx === undefined) return;
-      renderer.updateLine(lineIdx, `  ${pc.red("✗")} ${pc.bold(nodeId)} ${pc.dim(error.message)}`);
+      const idx = renderer.nodeLines.get(nodeId);
+      if (idx === undefined) return;
+      renderer.updateLine(idx, `  ${pc.red("✗")} ${nodeId} ${pc.dim(error.message)}`);
     },
   };
 
   const result = await executeDag(workflow, prompt, plugins, callbacks);
+  const totalTime = (performance.now() - startedAt) / 1000;
 
-  renderer.addLine("");
+  process.stdout.write(
+    `\n${pc.green("✓") + pc.bold(` Workflow "${workflow.name}" completed in ${totalTime.toFixed(1)}s`)}\n\n`,
+  );
 
   if (!result.success) {
     p.log.error(result.error ?? "Unknown error");
@@ -115,5 +102,27 @@ export default async function runTui(plugins: Map<string, AIPlugin>) {
     p.log.warn(result.warning);
   }
 
-  await showOutput(result.output ?? "");
+  showOutput(result.output ?? "");
+
+  const action = (await p.select({
+    message: "What now?",
+    options: [
+      { value: "back", label: "↩  Back to menu" },
+      { value: "copy", label: "📋  Copy to clipboard" },
+      { value: "exit", label: "✕  Exit" },
+    ],
+    initialValue: "back",
+  })) as string;
+
+  if (p.isCancel(action) || action === "back") return;
+
+  if (action === "exit") {
+    p.outro(pc.yellow("Bye! 🚀"));
+    process.exit(0);
+  }
+
+  if (action === "copy") {
+    copyToClipboard(result.output ?? "");
+    p.log.success("✓ Copied!");
+  }
 }

@@ -35,11 +35,6 @@ export async function mainInteractive(plugins: Map<string, AIPlugin>) {
       p.log.error(`No interactive mode available for "${command}".`);
     }
 
-    p.log.message("");
-    await p.confirm({
-      message: "Finished reviewing execution. Back to main menu?",
-      active: "Yes",
-    });
     console.clear();
   }
 
