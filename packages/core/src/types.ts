@@ -2,6 +2,8 @@ export interface AIPlugin {
   id: string;
   name: string;
   description?: string;
+  /** Environment variables required by this plugin, keyed by env var name with a human-readable description as value. */
+  requiredEnvVars?: Record<string, string>;
   execute: (
     prompt: string,
     systemInstruction?: string,

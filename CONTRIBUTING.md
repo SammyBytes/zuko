@@ -2,8 +2,6 @@
 
 This guide is for developers who want to build Zuko from source, add commands, or create new plugins.
 
----
-
 ## Setup
 
 ### Prerequisites
@@ -31,8 +29,6 @@ bun run typecheck
 
 No build step — Bun runs `.ts` files directly.
 
----
-
 ## Project structure
 
 ```
@@ -49,8 +45,9 @@ zuko/
 
 ```
 src/
-  index.ts           Entrypoint — loads plugins, registers commands, starts CLI or TUI
+  index.ts           Entrypoint — injects env vars from config, loads plugins, starts CLI or TUI
   registry.ts        Plugin discovery — scans node_modules/@sammybits/zuko-plugin-*
+  config.ts          Config I/O — reads/writes ~/.config/zuko/config.json, env var injection, missing key detection
   storage.ts         Workflow I/O — reads/writes .zuko/workflows/*.json
 
   engine/
@@ -62,13 +59,12 @@ src/
     run/             Run command — index.ts + tui.ts
     create/          Create command — index.ts + tui.ts + templates.ts
     edit/            Edit command — index.ts + tui.ts
+    config/          Config command — index.ts + tui.ts
 
   tui/
-    index.ts         Dynamically discovers TUI handlers from commands/*/tui.ts
+    index.ts         Dynamically discovers TUI handlers from commands/*/tui.ts + missing key warning
     shared.ts        Clipboard + output helpers
 ```
-
----
 
 ## Adding a new command
 
@@ -119,8 +115,6 @@ import { myCommand } from "./mycommand/index.ts";
 const commands: ZukoCommand[] = [runCommand, createCommand, editCommand, myCommand];
 ```
 
----
-
 ## Adding a new plugin (AI provider)
 
 ### Package naming
@@ -136,14 +130,31 @@ const plugin: AIPlugin = {
   id: "my-provider",          // Unique identifier
   name: "My Provider",        // Display name in TUI
   description: "Optional description",
+  requiredEnvVars: {           // Optional: API keys the plugin needs
+    "MY_API_KEY": "Description shown when prompting the user",
+  },
   execute: async (prompt, systemInstruction, modelId) => {
-    // Call the provider's API and return the text result
+    // The key is available via process.env.MY_API_KEY
     return "response text";
   },
 };
 
 export default plugin;
 ```
+
+### `requiredEnvVars`
+
+This optional field tells the config system what API keys your plugin
+needs. Keys are stored in `~/.config/zuko/config.json` and injected
+into `process.env` at startup.
+
+- **Key**: the environment variable name (uppercase convention).
+- **Value**: a human-readable description shown to the user when prompting for the key.
+
+If `requiredEnvVars` is declared, Zuko will:
+1. Prompt the user to set missing keys on first launch.
+2. Show the key in the `config` TUI wizard.
+3. Expose it via `zuko config set <ENV_VAR> --key <value>`.
 
 ### Registration is automatic
 
@@ -153,8 +164,6 @@ bun add @sammybits/zuko-plugin-my-provider
 
 That's it. No config changes needed.
 
----
-
 ## Engine: DAG execution
 
 `engine/dag.ts` is the primary executor.
@@ -163,8 +172,6 @@ That's it. No config changes needed.
 - **Legacy mode**: if no node has `dependsOn`, the engine infers a linear chain.
 
 Callbacks (`onWaveStart`, `onNodeStart`, `onNodeComplete`, `onNodeError`) let the TUI render a live tree during execution.
-
----
 
 ## Scripts
 
@@ -177,8 +184,6 @@ Callbacks (`onWaveStart`, `onNodeStart`, `onNodeComplete`, `onNodeError`) let th
 
 Each package has a `prepublishOnly` script that runs `version:check` — you cannot publish a version that already exists on npm.
 
----
-
 ## CI/CD
 
 `.github/workflows/ci.yml`:
@@ -186,8 +191,6 @@ Each package has a `prepublishOnly` script that runs `version:check` — you can
 - **PR to `dev`**: `bun install` + `typecheck`
 - **Push to `main`**: `bun install` + `typecheck` + `publish:all` (core → plugin-groq → zuko)
 - Requires `NPM_TOKEN` secret in the GitHub repository.
-
----
 
 ## Code conventions
 
