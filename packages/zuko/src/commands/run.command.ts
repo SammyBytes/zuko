@@ -8,7 +8,7 @@ interface RunResult {
   error?: string;
 }
 
-async function runPipeline(
+export async function runPipeline(
   workflow: Workflow,
   prompt: string,
   plugins: Map<string, AIPlugin>,

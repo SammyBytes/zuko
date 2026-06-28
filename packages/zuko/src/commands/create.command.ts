@@ -1,8 +1,8 @@
-import type { AIPlugin, Workflow, WorkflowNode } from "@sammybits/zuko-core";
+import type { Workflow, WorkflowNode } from "@sammybits/zuko-core";
 import type { ZukoCommand } from "./index.ts";
 import { saveWorkflow } from "../storage.ts";
 
-function toSlug(text: string): string {
+export function toSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
@@ -10,9 +10,9 @@ function toSlug(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-interface CreateParams {
+export interface CreateInput {
   name: string;
-  description: string;
+  description?: string;
   nodes: Array<{
     name: string;
     pluginId: string;
@@ -22,10 +22,29 @@ interface CreateParams {
   }>;
 }
 
+export async function createWorkflow(input: CreateInput): Promise<Workflow> {
+  const id = toSlug(input.name);
+  const workflow: Workflow = {
+    id,
+    name: input.name,
+    description: input.description || "",
+    nodes: input.nodes.map((n) => ({
+      id: toSlug(n.name),
+      pluginId: n.pluginId,
+      systemInstruction: n.systemInstruction,
+      modelId: n.modelId,
+      fallbackPluginId: n.fallbackPluginId || null,
+    })),
+  };
+
+  await saveWorkflow(workflow);
+  return workflow;
+}
+
 export const createCommand: ZukoCommand = {
   name: "create",
   description: "Create a new workflow definition (non-interactive)",
-  setup(program, { plugins }) {
+  setup(program) {
     program
       .command("create")
       .description("Create a new workflow from CLI arguments")
@@ -51,24 +70,18 @@ export const createCommand: ZukoCommand = {
           process.exit(1);
         }
 
-        const nodes: WorkflowNode[] = names.map((name, i) => ({
-          id: toSlug(name),
-          pluginId: pluginIds[i] || "groq",
-          systemInstruction: instructions[i] || "",
-          modelId: models[i],
-          fallbackPluginId: null,
-        }));
-
-        const id = toSlug(options.name);
-        const workflow: Workflow = {
-          id,
+        const workflow = await createWorkflow({
           name: options.name,
-          description: options.description || "",
-          nodes,
-        };
+          description: options.description,
+          nodes: names.map((name, i) => ({
+            name,
+            pluginId: pluginIds[i] || "groq",
+            systemInstruction: instructions[i] || "",
+            modelId: models[i],
+          })),
+        });
 
-        await saveWorkflow(workflow);
-        console.log(`Workflow saved → .zuko/workflows/${id}.json`);
+        console.log(`Workflow saved → .zuko/workflows/${workflow.id}.json`);
       });
   },
 };
