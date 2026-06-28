@@ -1,5 +1,5 @@
-import type { ZukoCommand } from "./index.ts";
-import { listWorkflows } from "../storage.ts";
+import type { ZukoCommand } from "../index.ts";
+import { listWorkflows } from "../../storage.ts";
 
 export const listCommand: ZukoCommand = {
   name: "list",

@@ -22,14 +22,14 @@
 zuko/src/
   commands/        ← Command definitions + Commander wiring (pure logic, no TUI)
     index.ts       ← Manifest — imports all commands, provides registerCommands()
-    run.command.ts
-    create.command.ts
-    list.command.ts
-  tui/             ← Interactive wrappers using @clack/prompts
-    index.ts       ← Main interactive menu
-    run.tui.ts     ← Prompts user, calls runPipeline() from command
-    create.tui.ts  ← Wizard, calls createWorkflow() from command
+    run/index.ts + tui.ts
+    create/index.ts + tui.ts
+    list/index.ts  ← no tui.ts (list has no interactive mode)
+  tui/             ← Dynamically discovers TUI handlers from commands/*/tui.ts
+    index.ts       ← Main interactive menu (no hardcoded switch)
     shared.ts      ← Clipboard + output helpers
+  engine/          ← Pipeline execution (linear now, DAG-ready)
+    pipeline.ts    ← Pure function: executePipeline()
   registry.ts      ← Dynamic plugin discovery (scans node_modules/@sammybits/zuko-plugin-*)
   storage.ts       ← Workflow I/O (reads/writes .zuko/workflows/*.json)
   index.ts         ← Entrypoint: loadPlugins → registerCommands → parse or TUI
@@ -40,10 +40,17 @@ zuko/src/
 ### Command system
 
 Commands auto-register via `commands/index.ts` manifest. To add a new command:
-1. Create `commands/mycommand.command.ts` exporting a `ZukoCommand` with `name`, `description`, `setup()`
-2. Import and add it to the `commands` array in `commands/index.ts`
+1. Create `commands/mycommand/index.ts` exporting a `ZukoCommand` with `name`, `description`, `setup()`
+2. Optionally create `commands/mycommand/tui.ts` with a default export handler for interactive mode
+3. Import and add it to the `commands` array in `commands/index.ts`
 
 Each command has a pure logic function (no TUI deps) exposed separately so the TUI layer can call it.
+
+TUI handlers live in the command directory (colocated, no extra dependency injection). The main menu dynamically imports `commands/*/tui.ts` — if it doesn't exist, the command simply isn't shown.
+
+### `engine/pipeline.ts`
+
+`executePipeline()` is the sole place where workflows are executed (node iteration, plugin calls, error handling). When the linear pipeline evolves into a DAG, only this file changes — commands and TUI stay untouched.
 
 ### Dynamic plugin discovery
 
@@ -88,3 +95,8 @@ None. No test frameworks, lint configs, formatters, or CI workflows are set up.
 ## Workflow files
 
 Serialized as JSON to `.zuko/workflows/<id>.json`. Created via `create` command (TUI wizard or CLI flags). Model IDs are free strings — the user writes whatever the provider accepts.
+
+## READMEs
+
+- `packages/core/README.md` — contract documentation, plugin authoring guide
+- `packages/zuko/README.md` — internal directory guide, how to add commands/plugins

@@ -1,6 +1,6 @@
-import type { Workflow, WorkflowNode } from "@sammybits/zuko-core";
-import type { ZukoCommand } from "./index.ts";
-import { saveWorkflow } from "../storage.ts";
+import type { Workflow } from "@sammybits/zuko-core";
+import type { ZukoCommand } from "../index.ts";
+import { saveWorkflow } from "../../storage.ts";
 
 export function toSlug(text: string): string {
   return text
