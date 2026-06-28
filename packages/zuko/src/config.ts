@@ -99,6 +99,28 @@ export function missingKeys(
   return result;
 }
 
+/**
+ * Returns env vars that are required by plugins, set in the environment,
+ * but NOT yet persisted in the config file. Used to offer persisting them.
+ */
+export async function envKeysNotInConfig(
+  plugins: Map<string, AIPlugin>,
+): Promise<MissingKeyInfo[]> {
+  const config = await loadConfig();
+  const result: MissingKeyInfo[] = [];
+  for (const plugin of plugins.values()) {
+    if (!plugin.requiredEnvVars) continue;
+    for (const [envVar, description] of Object.entries(
+      plugin.requiredEnvVars,
+    )) {
+      if (process.env[envVar] && !config.apiKeys[envVar]) {
+        result.push({ envVar, description, pluginName: plugin.name });
+      }
+    }
+  }
+  return result;
+}
+
 export async function injectEnvFromConfig(): Promise<void> {
   const config = await loadConfig();
   for (const [key, value] of Object.entries(config.apiKeys)) {
