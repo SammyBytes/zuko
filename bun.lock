@@ -4,14 +4,17 @@
   "workspaces": {
     "": {
       "name": "zuko-monorepo",
+      "devDependencies": {
+        "typescript": "^5.7.0",
+      },
     },
     "packages/core": {
       "name": "@sammybits/zuko-core",
-      "version": "1.0.0",
+      "version": "1.0.0-alpha.0",
     },
     "packages/plugin-groq": {
       "name": "@sammybits/zuko-plugin-groq",
-      "version": "1.0.0",
+      "version": "1.0.0-alpha.0",
       "dependencies": {
         "@ai-sdk/openai": "^1.1.0",
         "@sammybits/zuko-core": "1.0.0",
@@ -20,7 +23,7 @@
     },
     "packages/zuko": {
       "name": "@sammybits/zuko-cli",
-      "version": "1.0.1",
+      "version": "1.0.1-alpha.1",
       "bin": {
         "zuko": "./src/index.ts",
       },
@@ -88,6 +91,8 @@
     "swr": ["swr@2.4.2", "", { "dependencies": { "dequal": "^2.0.3", "use-sync-external-store": "^1.6.0" }, "peerDependencies": { "react": "^16.11.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-ej644Y2bvkIajfR32KGeSSdBXQW+ScjGjkybZgSE7kFpk9eGnV44XY9FJylXi+W75pavSX1PVNB57W5EbhGIYw=="],
 
     "throttleit": ["throttleit@2.1.0", "", {}, "sha512-nt6AMGKW1p/70DF/hGBdJB57B8Tspmbp5gfJ8ilhLnt7kkr2ye7hzD6NVG8GGErk2HWF34igrL2CXmNIkzKqKw=="],
+
+    "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "use-sync-external-store": ["use-sync-external-store@1.6.0", "", { "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w=="],
 
