@@ -5,14 +5,16 @@ const packages = ["packages/core", "packages/plugin-groq", "packages/zuko"];
 
 for (const dir of packages) {
   console.log(`\nPublishing ${dir}...`);
-  execSync("npm publish", {
-    cwd: dir,
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      NODE_AUTH_TOKEN: process.env.NPM_TOKEN,
-    },
-  });
+  try {
+    execSync("npm publish", {
+      cwd: dir,
+      stdio: "inherit",
+      env: process.env
+    });
+  } catch (error) {
+    console.error(`Failed to publish ${dir}`);
+    process.exit(1);
+  }
 }
 
-console.log("\nAll packages published.");
+console.log("\nAll packages published successfully! ");

@@ -74,6 +74,8 @@ A workflow is a series of AI nodes connected in a directed acyclic graph (DAG).
 
 Nodes run one after another. Each node receives the previous node's output as its prompt.
 
+# Edit a workflow
+zuko edit my-pipeline
 ```
 Prompt → Researcher → Writer → Publisher
 ```
@@ -106,6 +108,8 @@ Plugins are npm packages that add support for different AI providers.
 
 ```bash
 npm install @sammybits/zuko-plugin-groq
+```
+Prompt → Researcher → Writer → Publisher
 ```
 
 That's it — Zuko discovers plugins automatically. No config files to edit.

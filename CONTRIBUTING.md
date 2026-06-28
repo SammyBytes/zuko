@@ -2,8 +2,6 @@
 
 This guide is for developers who want to build Zuko from source, add commands, or create new plugins.
 
----
-
 ## Setup
 
 ### Prerequisites
@@ -30,8 +28,6 @@ bun run typecheck
 ```
 
 No build step — Bun runs `.ts` files directly.
-
----
 
 ## Project structure
 
@@ -69,8 +65,6 @@ src/
     index.ts         Dynamically discovers TUI handlers from commands/*/tui.ts + missing key warning
     shared.ts        Clipboard + output helpers
 ```
-
----
 
 ## Adding a new command
 
@@ -121,8 +115,6 @@ import { myCommand } from "./mycommand/index.ts";
 const commands: ZukoCommand[] = [runCommand, createCommand, editCommand, myCommand];
 ```
 
----
-
 ## Adding a new plugin (AI provider)
 
 ### Package naming
@@ -172,8 +164,6 @@ bun add @sammybits/zuko-plugin-my-provider
 
 That's it. No config changes needed.
 
----
-
 ## Engine: DAG execution
 
 `engine/dag.ts` is the primary executor.
@@ -182,8 +172,6 @@ That's it. No config changes needed.
 - **Legacy mode**: if no node has `dependsOn`, the engine infers a linear chain.
 
 Callbacks (`onWaveStart`, `onNodeStart`, `onNodeComplete`, `onNodeError`) let the TUI render a live tree during execution.
-
----
 
 ## Scripts
 
@@ -196,8 +184,6 @@ Callbacks (`onWaveStart`, `onNodeStart`, `onNodeComplete`, `onNodeError`) let th
 
 Each package has a `prepublishOnly` script that runs `version:check` — you cannot publish a version that already exists on npm.
 
----
-
 ## CI/CD
 
 `.github/workflows/ci.yml`:
@@ -205,8 +191,6 @@ Each package has a `prepublishOnly` script that runs `version:check` — you can
 - **PR to `dev`**: `bun install` + `typecheck`
 - **Push to `main`**: `bun install` + `typecheck` + `publish:all` (core → plugin-groq → zuko)
 - Requires `NPM_TOKEN` secret in the GitHub repository.
-
----
 
 ## Code conventions
 
