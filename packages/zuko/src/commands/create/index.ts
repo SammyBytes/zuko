@@ -19,6 +19,7 @@ export interface CreateInput {
     systemInstruction: string;
     modelId?: string;
     fallbackPluginId?: string;
+    dependsOn?: string[];
   }>;
 }
 
@@ -34,6 +35,7 @@ export async function createWorkflow(input: CreateInput): Promise<Workflow> {
       systemInstruction: n.systemInstruction,
       modelId: n.modelId,
       fallbackPluginId: n.fallbackPluginId || null,
+      dependsOn: n.dependsOn,
     })),
   };
 
