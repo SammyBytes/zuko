@@ -28,9 +28,9 @@ const CONSTANTS = Object.freeze({
 export async function loadPlugins(): Promise<Map<string, AIPlugin>> {
   const plugins = new Map<string, AIPlugin>();
 
-  for (const pkgName of await findPluginPackageNames()) {
+  for (const specifier of await findPluginSpecifiers()) {
     try {
-      const mod = await import(pkgName);
+      const mod = await import(specifier);
       const plugin = (mod.default ?? mod) as AIPlugin;
       
       // Strict validation of the AIPlugin interface contract
@@ -46,12 +46,12 @@ export async function loadPlugins(): Promise<Map<string, AIPlugin>> {
 }
 
 /**
- * Coordinates the resolution of plugin package names.
+ * Coordinates the resolution of plugin import specifiers.
  * Prioritizes production/installed folder (node_modules) and falls back to local workspaces during development.
  * 
- * @returns {Promise<string[]>} A list of full package names ready to be dynamically imported.
+ * @returns {Promise<string[]>} A list of import specifiers (package names or file paths) ready to be dynamically imported.
  */
-async function findPluginPackageNames(): Promise<string[]> {
+async function findPluginSpecifiers(): Promise<string[]> {
   const fromNodeModules = await scanScopeDir();
   if (fromNodeModules.length > 0) return fromNodeModules;
 
@@ -85,8 +85,10 @@ async function scanScopeDir(): Promise<string[]> {
  * Dev environment fallback (Monorepo).
  * Traverses upward looking for the `packages` directory, then reads the `package.json`
  * files from matching subdirectories that start with the designated workspace prefix.
+ * Returns the actual entrypoint file path so Bun can resolve it without needing
+ * the package to be a declared dependency.
  * 
- * @returns {Promise<string[]>} List of package names declared within the local workspaces.
+ * @returns {Promise<string[]>} List of file paths to plugin entrypoints.
  */
 async function scanWorkspacePackages(): Promise<string[]> {
   let dir = path.dirname(fileURLToPath(import.meta.url));
@@ -96,7 +98,7 @@ async function scanWorkspacePackages(): Promise<string[]> {
     
     if (existsSync(candidate)) {
       const dirs = await readdir(candidate).catch(() => []);
-      const names: string[] = [];
+      const paths: string[] = [];
       
       for (const d of dirs) {
         if (!d.startsWith(CONSTANTS.WORKSPACE_PREFIX)) continue;
@@ -106,13 +108,14 @@ async function scanWorkspacePackages(): Promise<string[]> {
             await readFile(pkgJsonPath, CONSTANTS.ENCODING_UTF8),
           );
           if (pkgJson.name) {
-            names.push(pkgJson.name);
+            const mainEntry = pkgJson.main || "./src/index.ts";
+            paths.push(path.join(candidate, d, mainEntry));
           }
         } catch {
           // Silently skip unreadable directories or malformed package.json files
         }
       }
-      return names;
+      return paths;
     }
     dir = path.dirname(dir);
   }

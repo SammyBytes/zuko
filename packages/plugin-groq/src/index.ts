@@ -11,6 +11,9 @@ const GroqPlugin: AIPlugin = {
   id: "groq",
   name: "Groq Cloud",
   description: "Ultra-fast inference provider running open models",
+  requiredEnvVars: {
+    "GROQ_API_KEY": "API key from https://console.groq.com/keys",
+  },
 
   async execute(
     prompt: string,

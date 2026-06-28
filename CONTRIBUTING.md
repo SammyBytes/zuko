@@ -49,8 +49,9 @@ zuko/
 
 ```
 src/
-  index.ts           Entrypoint — loads plugins, registers commands, starts CLI or TUI
+  index.ts           Entrypoint — injects env vars from config, loads plugins, starts CLI or TUI
   registry.ts        Plugin discovery — scans node_modules/@sammybits/zuko-plugin-*
+  config.ts          Config I/O — reads/writes ~/.config/zuko/config.json, env var injection, missing key detection
   storage.ts         Workflow I/O — reads/writes .zuko/workflows/*.json
 
   engine/
@@ -62,9 +63,10 @@ src/
     run/             Run command — index.ts + tui.ts
     create/          Create command — index.ts + tui.ts + templates.ts
     edit/            Edit command — index.ts + tui.ts
+    config/          Config command — index.ts + tui.ts
 
   tui/
-    index.ts         Dynamically discovers TUI handlers from commands/*/tui.ts
+    index.ts         Dynamically discovers TUI handlers from commands/*/tui.ts + missing key warning
     shared.ts        Clipboard + output helpers
 ```
 
@@ -136,14 +138,31 @@ const plugin: AIPlugin = {
   id: "my-provider",          // Unique identifier
   name: "My Provider",        // Display name in TUI
   description: "Optional description",
+  requiredEnvVars: {           // Optional: API keys the plugin needs
+    "MY_API_KEY": "Description shown when prompting the user",
+  },
   execute: async (prompt, systemInstruction, modelId) => {
-    // Call the provider's API and return the text result
+    // The key is available via process.env.MY_API_KEY
     return "response text";
   },
 };
 
 export default plugin;
 ```
+
+### `requiredEnvVars`
+
+This optional field tells the config system what API keys your plugin
+needs. Keys are stored in `~/.config/zuko/config.json` and injected
+into `process.env` at startup.
+
+- **Key**: the environment variable name (uppercase convention).
+- **Value**: a human-readable description shown to the user when prompting for the key.
+
+If `requiredEnvVars` is declared, Zuko will:
+1. Prompt the user to set missing keys on first launch.
+2. Show the key in the `config` TUI wizard.
+3. Expose it via `zuko config set <ENV_VAR> --key <value>`.
 
 ### Registration is automatic
 

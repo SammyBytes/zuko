@@ -26,10 +26,7 @@ bun install -g @sammybits/zuko-cli
 ## Quick Start
 
 ```bash
-# 1. Set your API key
-export GROQ_API_KEY="gsk_your_key_here"
-
-# 2. Launch the interactive menu
+# 1. Launch Zuko — it will ask for API keys on first run
 zuko
 ```
 
@@ -37,15 +34,23 @@ From the menu:
 1. **Create** — pick a template or build a custom workflow
 2. **Run** — select a workflow and execute it
 3. **Edit** — modify an existing workflow's nodes or dependencies
+4. **Config** — manage your API keys
+
+On first launch, Zuko will detect missing API keys and walk you
+through setting them up. Keys are saved to a config file so you
+only need to do this once.
 
 ## CLI Reference
 
 | Command | What it does |
-|---|---|
+|---|---|---|
 | `zuko` | Launch the interactive terminal UI |
 | `zuko create` | Create a workflow (interactive wizard) |
 | `zuko run <workflow-id>` | Run a workflow by ID |
 | `zuko edit [workflow-id]` | Edit an existing workflow |
+| `zuko config list` | List configured API keys |
+| `zuko config set <ENV_VAR> --key <value>` | Save an API key |
+| `zuko config unset <ENV_VAR>` | Remove an API key |
 | `zuko --help` | Show all options |
 
 ### Examples
@@ -111,7 +116,34 @@ Available plugins:
 |---|---|---|
 | `@sammybits/zuko-plugin-groq` | Groq | `GROQ_API_KEY` |
 
-## Environment Variables
+## Configuration
+
+API keys are stored in a config file — no need to export them every
+session.
+
+| OS | Config file location |
+|---|---|
+| Linux | `~/.config/zuko/config.json` |
+| Windows | `%APPDATA%/zuko/config.json` |
+
+### Quick setup
+
+```bash
+zuko config set GROQ_API_KEY --key gsk_your_key_here
+```
+
+### View configured keys
+
+```bash
+zuko config list
+# GROQ_API_KEY=gsk****_here
+```
+
+### Environment variables (fallback)
+
+If an environment variable is set (e.g. `export GROQ_API_KEY=...`),
+it takes precedence over the config file. This is useful for
+temporary overrides or CI environments.
 
 | Variable | Required for | Description |
 |---|---|---|
