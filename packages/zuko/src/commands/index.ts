@@ -2,7 +2,6 @@ import type { Command } from "commander";
 import type { CommandContext } from "@sammybits/zuko-core";
 import { runCommand } from "./run/index.ts";
 import { createCommand } from "./create/index.ts";
-import { listCommand } from "./list/index.ts";
 
 export interface ZukoCommand {
   name: string;
@@ -10,7 +9,7 @@ export interface ZukoCommand {
   setup: (program: Command, context: CommandContext) => void;
 }
 
-const commands: ZukoCommand[] = [runCommand, createCommand, listCommand];
+const commands: ZukoCommand[] = [runCommand, createCommand];
 
 /**
  * Returns menu items for the TUI layer.
