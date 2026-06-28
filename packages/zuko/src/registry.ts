@@ -4,6 +4,27 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AIPlugin } from "@sammybits/zuko-core";
 
+/**
+ * Internal configuration constants for locating and filtering plugins.
+ * Eliminates the use of magic strings throughout the loading module.
+ */
+const CONSTANTS = Object.freeze({
+  SCOPE_NAME: "@sammybits",
+  PLUGIN_PREFIX: "zuko-plugin-",
+  WORKSPACE_DIR: "packages",
+  WORKSPACE_PREFIX: "plugin-",
+  NODE_MODULES: "node_modules",
+  PKG_JSON: "package.json",
+  ENCODING_UTF8: "utf-8",
+  ROOT_DIR: "/",
+});
+
+/**
+ * Dynamically scans and imports plugins compatible with Zuko Core.
+ * Searches both installed dependencies in `node_modules` and the monorepo/workspace structure.
+ * 
+ * @returns {Promise<Map<string, AIPlugin>>} A map indexed by the plugin's `id` and its corresponding instance.
+ */
 export async function loadPlugins(): Promise<Map<string, AIPlugin>> {
   const plugins = new Map<string, AIPlugin>();
 
@@ -11,17 +32,25 @@ export async function loadPlugins(): Promise<Map<string, AIPlugin>> {
     try {
       const mod = await import(pkgName);
       const plugin = (mod.default ?? mod) as AIPlugin;
+      
+      // Strict validation of the AIPlugin interface contract
       if (plugin && typeof plugin.execute === "function") {
         plugins.set(plugin.id, plugin);
       }
     } catch {
-      // skip plugins that fail to load
+      // Safely skip plugins that fail to load or do not fulfill the interface
     }
   }
 
   return plugins;
 }
 
+/**
+ * Coordinates the resolution of plugin package names.
+ * Prioritizes production/installed folder (node_modules) and falls back to local workspaces during development.
+ * 
+ * @returns {Promise<string[]>} A list of full package names ready to be dynamically imported.
+ */
 async function findPluginPackageNames(): Promise<string[]> {
   const fromNodeModules = await scanScopeDir();
   if (fromNodeModules.length > 0) return fromNodeModules;
@@ -29,39 +58,58 @@ async function findPluginPackageNames(): Promise<string[]> {
   return scanWorkspacePackages();
 }
 
-/** Walk up from this file's location to find node_modules/@sammybits/ */
+/**
+ * Performs an upward traversal (looping towards root) from the current file's location
+ * trying to locate the `node_modules/@sammybits` directory to list installed production plugins.
+ * 
+ * @returns {Promise<string[]>} List of package names (e.g., `["@sammybits/zuko-plugin-weather"]`).
+ */
 async function scanScopeDir(): Promise<string[]> {
   let dir = path.dirname(fileURLToPath(import.meta.url));
-  while (dir !== "/") {
-    const candidate = path.join(dir, "node_modules", "@sammybits");
+  
+  while (dir !== CONSTANTS.ROOT_DIR) {
+    const candidate = path.join(dir, CONSTANTS.NODE_MODULES, CONSTANTS.SCOPE_NAME);
+    
     if (existsSync(candidate)) {
       const entries = await readdir(candidate).catch(() => []);
       return entries
-        .filter((e) => e.startsWith("zuko-plugin-"))
-        .map((e) => `@sammybits/${e}`);
+        .filter((e) => e.startsWith(CONSTANTS.PLUGIN_PREFIX))
+        .map((e) => `${CONSTANTS.SCOPE_NAME}/${e}`);
     }
     dir = path.dirname(dir);
   }
   return [];
 }
 
-/** Dev fallback: read package names from packages/plugin-* workspace dirs */
+/**
+ * Dev environment fallback (Monorepo).
+ * Traverses upward looking for the `packages` directory, then reads the `package.json`
+ * files from matching subdirectories that start with the designated workspace prefix.
+ * 
+ * @returns {Promise<string[]>} List of package names declared within the local workspaces.
+ */
 async function scanWorkspacePackages(): Promise<string[]> {
   let dir = path.dirname(fileURLToPath(import.meta.url));
-  while (dir !== "/") {
-    const candidate = path.join(dir, "packages");
+  
+  while (dir !== CONSTANTS.ROOT_DIR) {
+    const candidate = path.join(dir, CONSTANTS.WORKSPACE_DIR);
+    
     if (existsSync(candidate)) {
       const dirs = await readdir(candidate).catch(() => []);
       const names: string[] = [];
+      
       for (const d of dirs) {
-        if (!d.startsWith("plugin-")) continue;
+        if (!d.startsWith(CONSTANTS.WORKSPACE_PREFIX)) continue;
         try {
+          const pkgJsonPath = path.join(candidate, d, CONSTANTS.PKG_JSON);
           const pkgJson = JSON.parse(
-            await readFile(path.join(candidate, d, "package.json"), "utf-8"),
+            await readFile(pkgJsonPath, CONSTANTS.ENCODING_UTF8),
           );
-          names.push(pkgJson.name);
+          if (pkgJson.name) {
+            names.push(pkgJson.name);
+          }
         } catch {
-          // skip
+          // Silently skip unreadable directories or malformed package.json files
         }
       }
       return names;
