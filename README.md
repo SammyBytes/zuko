@@ -6,8 +6,6 @@ Zuko lets you build workflows where each step sends its output to the next, usin
 
 > **Note:** This is a hobby project. It works, but expect rough edges. Contributions and feedback are welcome.
 
----
-
 ## Install
 
 ```bash
@@ -25,8 +23,6 @@ bun install -g @sammybits/zuko-cli
 - [Bun](https://bun.sh) or [Node.js](https://nodejs.org) 18+
 - An API key for at least one AI provider
 
----
-
 ## Quick Start
 
 ```bash
@@ -43,8 +39,6 @@ From the menu:
 On first launch, Zuko will detect missing API keys and walk you
 through setting them up. Keys are saved to a config file so you
 only need to do this once.
-
----
 
 ## CLI Reference
 
@@ -71,8 +65,6 @@ zuko run my-pipeline
 # Edit a workflow
 zuko edit my-pipeline
 ```
-
----
 
 ## Workflows
 
@@ -108,8 +100,6 @@ Each node has:
 
 Workflows are saved as JSON files in `.zuko/workflows/` and can be shared or version-controlled.
 
----
-
 ## Plugins (AI providers)
 
 Plugins are npm packages that add support for different AI providers.
@@ -125,8 +115,6 @@ Available plugins:
 | Package | Provider | API key |
 |---|---|---|
 | `@sammybits/zuko-plugin-groq` | Groq | `GROQ_API_KEY` |
-
----
 
 ## Configuration
 
@@ -161,8 +149,6 @@ temporary overrides or CI environments.
 |---|---|---|
 | `GROQ_API_KEY` | Groq plugin | API key from console.groq.com |
 | `ZUKO_DEBUG=1` | — | Enable debug output |
-
----
 
 ## Need help?
 
