@@ -9,7 +9,7 @@ const program = new Command();
 program
   .name("zuko")
   .description("Multi-Model Prompt Pipeline CLI")
-  .version("1.0.1-alpha.1");
+  .version("1.0.2-alpha.1");
 
 const plugins = await loadPlugins();
 registerCommands(program, { plugins });
