@@ -1,5 +1,7 @@
+import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { AIPlugin } from "@sammybits/zuko-core";
 
 export async function loadPlugins(): Promise<Map<string, AIPlugin>> {
@@ -21,46 +23,50 @@ export async function loadPlugins(): Promise<Map<string, AIPlugin>> {
 }
 
 async function findPluginPackageNames(): Promise<string[]> {
-  // 1) Published plugins installed in node_modules/@sammybits/zuko-plugin-*
   const fromNodeModules = await scanScopeDir();
   if (fromNodeModules.length > 0) return fromNodeModules;
 
-  // 2) Dev fallback: scan workspace packages for plugin-* directories
   return scanWorkspacePackages();
 }
 
+/** Walk up from this file's location to find node_modules/@sammybits/ */
 async function scanScopeDir(): Promise<string[]> {
-  const scopeDir = path.join(process.cwd(), "node_modules", "@sammybits");
-  try {
-    const entries = await readdir(scopeDir);
-    return entries
-      .filter((e) => e.startsWith("zuko-plugin-"))
-      .map((e) => `@sammybits/${e}`);
-  } catch {
-    return [];
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  while (dir !== "/") {
+    const candidate = path.join(dir, "node_modules", "@sammybits");
+    if (existsSync(candidate)) {
+      const entries = await readdir(candidate).catch(() => []);
+      return entries
+        .filter((e) => e.startsWith("zuko-plugin-"))
+        .map((e) => `@sammybits/${e}`);
+    }
+    dir = path.dirname(dir);
   }
+  return [];
 }
 
+/** Dev fallback: read package names from packages/plugin-* workspace dirs */
 async function scanWorkspacePackages(): Promise<string[]> {
-  const packagesDir = path.join(process.cwd(), "packages");
-  try {
-    const dirs = await readdir(packagesDir);
-    const names: string[] = [];
-
-    for (const dir of dirs) {
-      if (!dir.startsWith("plugin-")) continue;
-      try {
-        const pkgJson = JSON.parse(
-          await readFile(path.join(packagesDir, dir, "package.json"), "utf-8"),
-        );
-        names.push(pkgJson.name);
-      } catch {
-        // skip if no valid package.json
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  while (dir !== "/") {
+    const candidate = path.join(dir, "packages");
+    if (existsSync(candidate)) {
+      const dirs = await readdir(candidate).catch(() => []);
+      const names: string[] = [];
+      for (const d of dirs) {
+        if (!d.startsWith("plugin-")) continue;
+        try {
+          const pkgJson = JSON.parse(
+            await readFile(path.join(candidate, d, "package.json"), "utf-8"),
+          );
+          names.push(pkgJson.name);
+        } catch {
+          // skip
+        }
       }
+      return names;
     }
-
-    return names;
-  } catch {
-    return [];
+    dir = path.dirname(dir);
   }
+  return [];
 }
