@@ -16,6 +16,8 @@ export interface WorkflowNode {
   systemInstruction?: string;
   fallbackPluginId: string | null;
   fallbackModelId?: string;
+  /** Node IDs this node depends on. Empty array = root (depends on initial prompt). Undefined = linear chain mode (depends on previous node). */
+  dependsOn?: string[];
 }
 
 export interface Workflow {
