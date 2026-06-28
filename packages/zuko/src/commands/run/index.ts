@@ -1,6 +1,6 @@
 import type { ZukoCommand } from "../index.ts";
 import { listWorkflows } from "../../storage.ts";
-import { executePipeline } from "../../engine/pipeline.ts";
+import { executeDag } from "../../engine/dag.ts";
 
 export const runCommand: ZukoCommand = {
   name: "run",
@@ -30,7 +30,7 @@ export const runCommand: ZukoCommand = {
           process.exit(1);
         }
 
-        const result = await executePipeline(workflow, options.prompt, plugins);
+        const result = await executeDag(workflow, options.prompt, plugins);
         if (result.success) {
           console.log(result.output);
         } else {
