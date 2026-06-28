@@ -10,7 +10,7 @@ const program = new Command();
 program
   .name("zuko")
   .description("Multi-Model Prompt Pipeline CLI")
-  .version("1.0.2-alpha.2");
+  .version("1.1.1");
 
 await injectEnvFromConfig();
 const plugins = await loadPlugins();
