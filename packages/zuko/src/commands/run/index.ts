@@ -31,6 +31,9 @@ export const runCommand: ZukoCommand = {
         }
 
         const result = await executeDag(workflow, options.prompt, plugins);
+        if (result.warning) {
+          console.error(`Warning: ${result.warning}`);
+        }
         if (result.success) {
           console.log(result.output);
         } else {

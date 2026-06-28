@@ -111,5 +111,9 @@ export default async function runTui(plugins: Map<string, AIPlugin>) {
     return;
   }
 
+  if (result.warning) {
+    p.log.warn(result.warning);
+  }
+
   await showOutput(result.output ?? "");
 }

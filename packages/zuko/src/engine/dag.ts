@@ -9,6 +9,7 @@ export interface DagNodeOutput {
 export interface DagResult {
   success: boolean;
   output?: string;
+  warning?: string;
   nodeOutputs: DagNodeOutput[];
   executionTrace: { wave: number; nodeId: string; duration: number }[];
   error?: string;
@@ -75,6 +76,12 @@ function collectInput(
     .join("\n\n---\n\n");
 }
 
+function findTerminalNodeIds(adjList: Map<string, string[]>): string[] {
+  return Array.from(adjList.entries())
+    .filter(([, deps]) => deps.length === 0)
+    .map(([id]) => id);
+}
+
 export async function executeDag(
   workflow: Workflow,
   prompt: string,
@@ -82,8 +89,9 @@ export async function executeDag(
   callbacks?: DagCallbacks,
 ): Promise<DagResult> {
   const nodes = workflow.nodes.map((n) => ({ ...n }));
+  const hadExplicitDeps = hasExplicitDeps(nodes);
 
-  if (!hasExplicitDeps(nodes)) {
+  if (!hadExplicitDeps) {
     inferLinearDeps(nodes);
   }
 
@@ -191,11 +199,30 @@ export async function executeDag(
     }
   }
 
+  const terminalIds = findTerminalNodeIds(adjList);
+  const terminalOutputs = terminalIds
+    .map((id) => outputs.get(id) || "")
+    .filter(Boolean);
+
+  let output: string | undefined;
+  let warning: string | undefined;
+
+  if (terminalOutputs.length === 0) {
+    output = allOutputs.length > 0 ? allOutputs[allOutputs.length - 1].text : undefined;
+  } else if (terminalOutputs.length === 1) {
+    output = terminalOutputs[0];
+  } else {
+    output = terminalOutputs.join("\n\n");
+    if (hadExplicitDeps) {
+      const names = terminalIds.map((id) => `"${id}"`).join(", ");
+      warning = `Workflow "${workflow.name}" has ${terminalIds.length} terminal nodes (${names}) but no merge node. Consider adding a merge node. Concatenating raw outputs.`;
+    }
+  }
+
   return {
     success: true,
-    output: allOutputs
-      .map((n) => `## [Node: ${n.nodeId}]\n\n${n.text}`)
-      .join("\n\n---\n\n"),
+    output,
+    warning,
     nodeOutputs: allOutputs,
     executionTrace: trace,
   };
