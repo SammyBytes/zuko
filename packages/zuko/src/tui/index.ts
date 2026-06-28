@@ -39,7 +39,6 @@ export async function mainInteractive(plugins: Map<string, AIPlugin>) {
     await p.confirm({
       message: "Finished reviewing execution. Back to main menu?",
       active: "Yes",
-      placeholder: "Press Enter",
     });
     console.clear();
   }

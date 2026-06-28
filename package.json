@@ -3,5 +3,14 @@
   "private": true,
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "dev": "bun packages/zuko/src/index.ts",
+    "typecheck": "bun x tsc --noEmit",
+    "publish:all": "bun scripts/publish-all.ts",
+    "version:check": "bun ../../scripts/check-version.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
 }

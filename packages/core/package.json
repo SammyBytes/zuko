@@ -7,7 +7,14 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "files": [
+    "src/"
+  ],
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "prepublishOnly": "bun ../../scripts/check-version.ts",
+    "version:check": "bun ../../scripts/check-version.ts"
   }
 }

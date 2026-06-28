@@ -77,6 +77,17 @@ No hardcoded model lists. The user decides which model string to use.
 
 No pino or any logging framework. CLI mode uses `console.log`/`console.error`. TUI mode uses `@clack/prompts` (`p.log.*`). Debug: set `ZUKO_DEBUG=1` for extra output.
 
+## Scripts
+
+| `bun run ...` | What it does |
+|---|---|
+| `dev` | Run the CLI directly (`bun packages/zuko/src/index.ts`) |
+| `typecheck` | `tsc --noEmit` across all packages |
+| `version:check` | Checks local version against npm registry (run from package dir) |
+| `publish:all` | Publishes all packages in workspace order |
+
+Each package has `prepublishOnly` that runs `version:check` — you cannot publish a version that already exists on npm.
+
 ## Env
 
 - `GROQ_API_KEY` — required for Groq plugin
@@ -85,12 +96,8 @@ No pino or any logging framework. CLI mode uses `console.log`/`console.error`. T
 ## Development loop
 
 1. `bun install` at root
-2. `bun link --cwd packages/plugin-groq && bun link @zuko/plugin-groq --cwd packages/zuko` (see README for linking rationale)
-3. `bun packages/zuko/src/index.ts` to run
-
-## Tests / CI
-
-None. No test frameworks, lint configs, formatters, or CI workflows are set up.
+2. `bun packages/zuko/src/index.ts` to run
+3. `bun run typecheck` to verify types
 
 ## Workflow files
 
